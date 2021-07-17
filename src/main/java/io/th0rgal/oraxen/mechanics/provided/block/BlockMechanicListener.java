@@ -3,8 +3,10 @@ package io.th0rgal.oraxen.mechanics.provided.block;
 import io.th0rgal.oraxen.items.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.utils.Utils;
-
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
@@ -19,9 +21,6 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.Arrays;
-import java.util.List;
 
 public class BlockMechanicListener implements Listener {
 
@@ -38,6 +37,7 @@ public class BlockMechanicListener implements Listener {
             event.getBlock().getState().update(true, false);
         }
     }
+
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreakingCustomBlock(BlockBreakEvent event) {
@@ -59,7 +59,7 @@ public class BlockMechanicListener implements Listener {
     public void onPlacingMushroomBlock(BlockPlaceEvent event) {
 
         if (event.getBlockPlaced().getType() != Material.MUSHROOM_STEM
-            || OraxenItems.exists(OraxenItems.getIdByItem(event.getItemInHand())))
+                || OraxenItems.exists(OraxenItems.getIdByItem(event.getItemInHand())))
             return;
 
         Block block = event.getBlock();
@@ -69,10 +69,6 @@ public class BlockMechanicListener implements Listener {
     }
 
     // not static here because only instanciated once I think
-    private final List<Material> replaceableBlocks = Arrays
-        .asList(Material.SNOW, Material.VINE, Material.GRASS, Material.TALL_GRASS, Material.SEAGRASS, Material.FERN,
-            Material.LARGE_FERN);
-
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPrePlacingCustomBlock(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
@@ -87,11 +83,12 @@ public class BlockMechanicListener implements Listener {
         Block placedAgainst = event.getClickedBlock();
         Block target;
         Material type = placedAgainst.getType();
-        if (replaceableBlocks.contains(type))
+        if (Utils.REPLACEABLE_BLOCKS.contains(type))
             target = placedAgainst;
         else {
             target = placedAgainst.getRelative(event.getBlockFace());
-            if (target.getType() != Material.AIR)
+            if (target.getType() != Material.AIR && target.getType() != Material.WATER
+                    && target.getType() != Material.CAVE_AIR)
                 return;
         }
         if (isStandingInside(player, target))
@@ -110,7 +107,7 @@ public class BlockMechanicListener implements Listener {
         target.setBlockData(newBlockData); // false to cancel physic
 
         BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(target, currentBlockState, placedAgainst, item, player,
-            true, event.getHand());
+                true, event.getHand());
         Bukkit.getPluginManager().callEvent(blockPlaceEvent);
         if (!blockPlaceEvent.canBuild() || blockPlaceEvent.isCancelled()) {
             target.setBlockData(curentBlockData, false); // false to cancel physic
@@ -125,9 +122,9 @@ public class BlockMechanicListener implements Listener {
         Location playerLocation = player.getLocation();
         Location blockLocation = block.getLocation();
         return playerLocation.getBlockX() == blockLocation.getBlockX()
-            && (playerLocation.getBlockY() == blockLocation.getBlockY()
+                && (playerLocation.getBlockY() == blockLocation.getBlockY()
                 || playerLocation.getBlockY() + 1 == blockLocation.getBlockY())
-            && playerLocation.getBlockZ() == blockLocation.getBlockZ();
+                && playerLocation.getBlockZ() == blockLocation.getBlockZ();
     }
 
 }

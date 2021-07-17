@@ -1,7 +1,8 @@
 package io.th0rgal.oraxen.pack.dispatch;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.settings.Pack;
+import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.config.Settings;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -25,15 +26,16 @@ public class PackDispatcher {
                 url.replace("https://", "http://"), sha1);
     }
 
-    public static void sendWelcomeMessage(Player player) {
-        BaseComponent[] components = Pack.JOIN_MESSAGE_CONTENT.toMiniMessage("pack_url", url);
-        long delay = (int) Pack.JOIN_MESSAGE_DELAY.getValue();
-        if (delay == -1)
-            player.spigot().sendMessage(components);
+    public static void sendWelcomeMessage(Player player, boolean delayed) {
+        BaseComponent[] components = null; // Pack.JOIN_MESSAGE_CONTENT.toMiniMessage("pack_url", url)
+        long delay = (int) Settings.JOIN_MESSAGE_DELAY.getValue();
+        if (delay == -1 || !delayed)
+            Message.COMMAND_JOIN_MESSAGE.send(player, "pack_url", url);
         else
             Bukkit
                     .getScheduler()
-                    .runTaskLaterAsynchronously(OraxenPlugin.get(), () -> player.spigot().sendMessage(components),
+                    .runTaskLaterAsynchronously(OraxenPlugin.get(),
+                            () -> Message.COMMAND_JOIN_MESSAGE.send(player, "pack_url", url),
                             delay * 20L);
     }
 

@@ -1,6 +1,8 @@
 package io.th0rgal.oraxen.pack.upload;
 
 import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.pack.dispatch.PackDispatcher;
 import io.th0rgal.oraxen.pack.dispatch.PackSender;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
@@ -8,7 +10,6 @@ import io.th0rgal.oraxen.pack.receive.PackReceiver;
 import io.th0rgal.oraxen.pack.upload.hosts.HostingProvider;
 import io.th0rgal.oraxen.pack.upload.hosts.Polymath;
 import io.th0rgal.oraxen.pack.upload.hosts.Sh;
-import io.th0rgal.oraxen.settings.Pack;
 import io.th0rgal.oraxen.utils.logs.Logs;
 
 import org.bukkit.Bukkit;
@@ -23,100 +24,110 @@ import java.util.List;
 
 public class UploadManager {
 
-    private Plugin plugin;
-    private boolean enabled;
-    private HostingProvider hostingProvider;
+    private final Plugin plugin;
+    private final boolean enabled;
+    private final HostingProvider hostingProvider;
 
     private PackReceiver receiver;
     private PackSender sender;
 
     public UploadManager(Plugin plugin) {
         this.plugin = plugin;
-        this.enabled = (boolean) Pack.UPLOAD.getValue();
+        this.enabled = Settings.UPLOAD.toBool();
         this.hostingProvider = getHostingProvider();
     }
 
     public void uploadAsyncAndSendToPlayers(ResourcePack resourcePack) {
+        uploadAsyncAndSendToPlayers(resourcePack, false);
+    }
+
+    public void uploadAsyncAndSendToPlayers(ResourcePack resourcePack, boolean updateSend) {
         if (!enabled)
             return;
-        if ((boolean) Pack.RECEIVE_ENABLED.getValue() && receiver == null)
+        if (Settings.RECEIVE_ENABLED.toBool() && receiver == null)
             Bukkit.getPluginManager().registerEvents(receiver = new PackReceiver(), plugin);
         long time = System.currentTimeMillis();
-        Logs.log(ChatColor.GREEN, "Automatic upload of the resource pack is enabled, uploading...");
+        Message.PACK_UPLOADING.log("prefix", Message.PREFIX.toString());
         Bukkit.getScheduler().runTaskAsynchronously(OraxenPlugin.get(), () -> {
             if (!hostingProvider.uploadPack(resourcePack.getFile())) {
-                Logs.log(ChatColor.RED, "Resourcepack not uploaded");
+                Message.PACK_NOT_UPLOADED.log();
                 return;
             }
-            Logs
-                .log(ChatColor.GREEN, "Resourcepack uploaded on url " + hostingProvider.getPackURL() + " in "
-                    + (System.currentTimeMillis() - time) + "ms");
+            Message.PACK_UPLOADED.log(
+                    "url", hostingProvider.getPackURL(), "delay", String.valueOf(System.currentTimeMillis() - time));
+
             PackDispatcher.setPackURL(hostingProvider.getPackURL());
             PackDispatcher.setSha1(hostingProvider.getSHA1());
-            if (((boolean) Pack.SEND_PACK.getValue() || (boolean) Pack.SEND_JOIN_MESSAGE.getValue()) && sender == null)
+            if ((Settings.SEND_PACK.toBool() || Settings.SEND_JOIN_MESSAGE.toBool()) && sender == null)
                 Bukkit.getPluginManager().registerEvents(sender = new PackSender(), plugin);
+            /* Too much pain for people trying to configure mechanics
+            if ((boolean) Pack.SEND_PACK.getValue() && updateSend)
+                for (Player player : Bukkit.getOnlinePlayers())
+                    PackDispatcher.sendPack(player);
+            */
         });
     }
 
     private HostingProvider getHostingProvider() {
-        switch (Pack.UPLOAD_TYPE.toString().toLowerCase()) {
-        case "polymath":
-            return new Polymath(Pack.POLYMATH_SERVER.toString());
-        case "sh":
-        case "cmd":
-            final ConfigurationSection opt = (ConfigurationSection) Pack.UPLOAD_OPTIONS.getValue();
-            final List<String> args = opt.getStringList("args");
-            if (args == null || args.isEmpty())
-                throw new ProviderNotFoundException("No command line.");
-            String placeholder = opt.getString("placeholder", "${file}");
-            return new Sh(Sh.path(placeholder, args));
-        case "external":
-            Class<?> target;
-            final ConfigurationSection options = (ConfigurationSection) Pack.UPLOAD_OPTIONS.getValue();
-            String klass = options.getString("class");
-            if (klass == null)
-                throw new ProviderNotFoundException("No provider set.");
-            try {
-                target = Class.forName(klass);
-            } catch (Throwable any) {
-                ProviderNotFoundException error = new ProviderNotFoundException("Provider not found: " + klass);
-                error.addSuppressed(any);
-                throw error;
-            }
-            if (!HostingProvider.class.isAssignableFrom(target)) {
-                throw new ProviderNotFoundException(target + " is not a valid HostingProvider.");
-            }
-            Class<? extends HostingProvider> implement = target.asSubclass(HostingProvider.class);
-            Constructor<? extends HostingProvider> constructor;
-            try {
+        switch (Settings.UPLOAD_TYPE.toString().toLowerCase()) {
+            case "polymath":
+                return new Polymath(Settings.POLYMATH_SERVER.toString());
+            case "sh":
+            case "cmd":
+                final ConfigurationSection opt = (ConfigurationSection) Settings.UPLOAD_OPTIONS.getValue();
+                final List<String> args = opt.getStringList("args");
+                if (args.isEmpty())
+                    throw new ProviderNotFoundException("No command line.");
+                String placeholder = opt.getString("placeholder", "${file}");
+                return new Sh(Sh.path(placeholder, args));
+            case "external":
+                Class<?> target;
+                final ConfigurationSection options = (ConfigurationSection) Settings.UPLOAD_OPTIONS.getValue();
+                String klass = options.getString("class");
+                if (klass == null)
+                    throw new ProviderNotFoundException("No provider set.");
                 try {
-                    constructor = implement.getConstructor(ConfigurationSection.class);
-                } catch (Exception notFound) {
-                    try {
-                        constructor = implement.getConstructor();
-                    } catch (Exception ignore) {
-                        throw notFound; // Use (Lorg/bukkit/configuration/ConfigurationSection;)V to Exception
-                    }
+                    target = Class.forName(klass);
+                } catch (Throwable any) {
+                    ProviderNotFoundException error = new ProviderNotFoundException("Provider not found: " + klass);
+                    error.addSuppressed(any);
+                    throw error;
                 }
-            } catch (Exception e) {
-                throw (ProviderNotFoundException) new ProviderNotFoundException("Cannot found constructor in " + target)
-                    .initCause(e);
-            }
-            try {
-                return constructor.getParameterCount() == 0 ? constructor.newInstance()
-                    : constructor.newInstance(options);
-            } catch (InstantiationException e) {
-                throw (ProviderNotFoundException) new ProviderNotFoundException("Cannot alloc instance for " + target)
-                    .initCause(e);
-            } catch (IllegalAccessException e) {
-                throw (ProviderNotFoundException) new ProviderNotFoundException("Failed to access " + target)
-                    .initCause(e);
-            } catch (InvocationTargetException e) {
-                throw (ProviderNotFoundException) new ProviderNotFoundException("Exception in allocating instance.")
-                    .initCause(e.getCause());
-            }
-        default:
-            throw new ProviderNotFoundException("Unknown provider type: " + Pack.UPLOAD_TYPE);
+                if (!HostingProvider.class.isAssignableFrom(target)) {
+                    throw new ProviderNotFoundException(target + " is not a valid HostingProvider.");
+                }
+                Class<? extends HostingProvider> implement = target.asSubclass(HostingProvider.class);
+                Constructor<? extends HostingProvider> constructor;
+                try {
+                    try {
+                        constructor = implement.getConstructor(ConfigurationSection.class);
+                    } catch (Exception notFound) {
+                        try {
+                            constructor = implement.getConstructor();
+                        } catch (Exception ignore) {
+                            // For catching reasons
+                            throw (ProviderNotFoundException) new ProviderNotFoundException("Invalid provider: " + target).initCause(ignore); // Use (Lorg/bukkit/configuration/ConfigurationSection;)V to Exception
+                        }
+                    }
+                } catch (Exception e) {
+                    throw (ProviderNotFoundException) new ProviderNotFoundException("Cannot found constructor in " + target)
+                            .initCause(e);
+                }
+                try {
+                    return constructor.getParameterCount() == 0 ? constructor.newInstance()
+                            : constructor.newInstance(options);
+                } catch (InstantiationException e) {
+                    throw (ProviderNotFoundException) new ProviderNotFoundException("Cannot alloc instance for " + target)
+                            .initCause(e);
+                } catch (IllegalAccessException e) {
+                    throw (ProviderNotFoundException) new ProviderNotFoundException("Failed to access " + target)
+                            .initCause(e);
+                } catch (InvocationTargetException e) {
+                    throw (ProviderNotFoundException) new ProviderNotFoundException("Exception in allocating instance.")
+                            .initCause(e.getCause());
+                }
+            default:
+                throw new ProviderNotFoundException("Unknown provider type: " + Settings.UPLOAD_TYPE);
         }
 
     }

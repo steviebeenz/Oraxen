@@ -2,11 +2,6 @@ package io.th0rgal.oraxen.items;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.syntaxphoenix.syntaxapi.nbt.NbtCompound;
-import com.syntaxphoenix.syntaxapi.nbt.NbtTag;
-import com.syntaxphoenix.syntaxapi.nbt.NbtType;
-
-import io.th0rgal.oraxen.utils.reflection.ItemTools;
 
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -53,9 +48,6 @@ public class ItemBuilder {
     private final PersistentDataContainer persistentDataContainer;
     private final Map<Enchantment, Integer> enchantments;
 
-    private final NbtCompound overrideData;
-    private final NbtCompound customItemData;
-
     public ItemBuilder(Material material) {
         this(new ItemStack(material));
     }
@@ -76,19 +68,16 @@ public class ItemBuilder {
         if (itemMeta instanceof LeatherArmorMeta)
             this.color = ((LeatherArmorMeta) itemMeta).getColor();
 
-        if (itemMeta instanceof PotionMeta) {
-            PotionMeta potionMeta = (PotionMeta) itemMeta;
-
+        if (itemMeta instanceof PotionMeta potionMeta) {
             this.color = potionMeta.getColor();
             this.potionData = potionMeta.getBasePotionData();
-            this.potionEffects = potionMeta.getCustomEffects();
+            this.potionEffects = new ArrayList<>(potionMeta.getCustomEffects());
         }
 
         if (itemMeta instanceof SkullMeta)
             this.owningPlayer = ((SkullMeta) itemMeta).getOwningPlayer();
 
-        if (itemMeta instanceof TropicalFishBucketMeta) {
-            TropicalFishBucketMeta tropicalFishBucketMeta = (TropicalFishBucketMeta) itemMeta;
+        if (itemMeta instanceof TropicalFishBucketMeta tropicalFishBucketMeta) {
             this.bodyColor = tropicalFishBucketMeta.getBodyColor();
             this.pattern = tropicalFishBucketMeta.getPattern();
             this.patternColor = tropicalFishBucketMeta.getPatternColor();
@@ -115,11 +104,6 @@ public class ItemBuilder {
 
         this.persistentDataContainer = itemMeta.getPersistentDataContainer();
 
-        this.overrideData = ItemTools.toNbtCompound(itemStack);
-        this.customItemData = overrideData.hasKey("oraxenData", NbtType.COMPOUND)
-            ? overrideData.getCompound("oraxenData")
-            : new NbtCompound();
-
         this.enchantments = new HashMap<>();
 
     }
@@ -144,6 +128,10 @@ public class ItemBuilder {
     public ItemBuilder setLore(List<String> lore) {
         this.lore = lore;
         return this;
+    }
+
+    public List<String> getLore() {
+        return this.lore;
     }
 
     public ItemBuilder setUnbreakable(boolean unbreakable) {
@@ -187,7 +175,7 @@ public class ItemBuilder {
     public <T, Z> Z getCustomTag(NamespacedKey namespacedKey, PersistentDataType<T, Z> dataType) {
         for (Map.Entry<PersistentDataSpace, Object> dataSpace : persistentDataMap.entrySet())
             if (dataSpace.getKey().getNamespacedKey().equals(namespacedKey)
-                && dataSpace.getKey().getDataType().equals(dataType))
+                    && dataSpace.getKey().getDataType().equals(dataType))
                 return (Z) dataSpace.getValue();
         return null;
     }
@@ -201,38 +189,6 @@ public class ItemBuilder {
             hasCustomModelData = true;
         this.customModelData = customModelData;
         return this;
-    }
-
-    public ItemBuilder setOverrideTag(String name, NbtTag tag) {
-        overrideData.set(name, tag);
-        return this;
-    }
-
-    public ItemBuilder setOverrideTags(NbtCompound compound) {
-        overrideData.getValue().putAll(compound.getValue());
-        return this;
-    }
-
-    public NbtTag getOverrideTag(String name) {
-        return overrideData.get(name);
-    }
-
-    public ItemBuilder setNbtTag(String name, NbtTag tag) {
-        customItemData.set(name, tag);
-        return this;
-    }
-    
-    public NbtCompound getNbtData(boolean override) {
-        return override ? overrideData : customItemData;
-    }
-
-    public ItemBuilder setNbtTags(NbtCompound compound) {
-        customItemData.getValue().putAll(compound.getValue());
-        return this;
-    }
-
-    public NbtTag getNbtTag(String name) {
-        return customItemData.get(name);
     }
 
     public ItemBuilder addItemFlags(ItemFlag... itemFlags) {
@@ -305,12 +261,7 @@ public class ItemBuilder {
     @SuppressWarnings("unchecked")
     public ItemBuilder regen() {
 
-        ItemStack itemStack = ItemTools.fromNbtCompound(overrideData);
-        
-        overrideData.remove("oraxenData");
-        
-        if (!customItemData.isEmpty())
-            overrideData.set("oraxenData", customItemData);
+        ItemStack itemStack = this.itemStack;
 
         /*
          * CHANGING ITEM
@@ -326,24 +277,21 @@ public class ItemBuilder {
         ItemMeta itemMeta = itemStack.getItemMeta();
 
         // durability
-        if (itemMeta instanceof Damageable) {
-            Damageable damageable = (Damageable) itemMeta;
+        if (itemMeta instanceof Damageable damageable) {
             if (durability != damageable.getDamage()) {
                 damageable.setDamage(durability);
                 itemMeta = (ItemMeta) damageable;
             }
         }
 
-        if (itemMeta instanceof LeatherArmorMeta) {
-            LeatherArmorMeta leatherArmorMeta = (LeatherArmorMeta) itemMeta;
+        if (itemMeta instanceof LeatherArmorMeta leatherArmorMeta) {
             if (color != null && !color.equals(leatherArmorMeta.getColor())) {
                 leatherArmorMeta.setColor(color);
                 itemMeta = leatherArmorMeta;
             }
         }
 
-        if (itemMeta instanceof PotionMeta) {
-            PotionMeta potionMeta = (PotionMeta) itemMeta;
+        if (itemMeta instanceof PotionMeta potionMeta) {
 
             if (color != null && !color.equals(potionMeta.getColor()))
                 potionMeta.setColor(color);
@@ -358,8 +306,7 @@ public class ItemBuilder {
             itemMeta = potionMeta;
         }
 
-        if (itemMeta instanceof SkullMeta) {
-            SkullMeta skullMeta = (SkullMeta) itemMeta;
+        if (itemMeta instanceof SkullMeta skullMeta) {
             OfflinePlayer defaultOwningPlayer = skullMeta.getOwningPlayer();
             if (!owningPlayer.equals(defaultOwningPlayer)) {
                 skullMeta.setOwningPlayer(owningPlayer);
@@ -367,8 +314,7 @@ public class ItemBuilder {
             }
         }
 
-        if (itemMeta instanceof TropicalFishBucketMeta) {
-            TropicalFishBucketMeta tropicalFishBucketMeta = (TropicalFishBucketMeta) itemMeta;
+        if (itemMeta instanceof TropicalFishBucketMeta tropicalFishBucketMeta) {
 
             DyeColor defaultColor = tropicalFishBucketMeta.getBodyColor();
             if (!bodyColor.equals(defaultColor))
@@ -405,9 +351,9 @@ public class ItemBuilder {
         if (!persistentDataMap.isEmpty())
             for (Map.Entry<PersistentDataSpace, Object> dataSpace : persistentDataMap.entrySet())
                 itemMeta
-                    .getPersistentDataContainer()
-                    .set(dataSpace.getKey().getNamespacedKey(),
-                        (PersistentDataType<?, Object>) dataSpace.getKey().getDataType(), dataSpace.getValue());
+                        .getPersistentDataContainer()
+                        .set(dataSpace.getKey().getNamespacedKey(),
+                                (PersistentDataType<?, Object>) dataSpace.getKey().getDataType(), dataSpace.getValue());
 
         itemMeta.setLore(lore);
 
@@ -427,7 +373,6 @@ public class ItemBuilder {
         int rest = max == amount ? amount : amount % max;
         int iterations = amount > max ? (amount - rest) / max : 0;
         ItemStack[] output = new ItemStack[iterations + (rest > 0 ? 1 : 0)];
-        System.out.println(max + "/" + rest + "/" + iterations);
         for (int index = 0; index < iterations; index++) {
             ItemStack clone = built.clone();
             clone.setAmount(max);

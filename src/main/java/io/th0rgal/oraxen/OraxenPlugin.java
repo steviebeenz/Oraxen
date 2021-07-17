@@ -1,43 +1,36 @@
 package io.th0rgal.oraxen;
 
-import io.th0rgal.oraxen.command.CommandProvider;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIConfig;
+import io.th0rgal.oraxen.commands.CommandsManager;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
-import io.th0rgal.oraxen.event.config.OraxenConfigEvent;
+import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.items.OraxenItems;
-import io.th0rgal.oraxen.language.FallbackHandler;
-import io.th0rgal.oraxen.language.LanguageListener;
-import io.th0rgal.oraxen.language.Translations;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.recipes.RecipesManager;
-import io.th0rgal.oraxen.settings.ConfigsManager;
-import io.th0rgal.oraxen.settings.MessageOld;
-import io.th0rgal.oraxen.settings.Plugin;
+import io.th0rgal.oraxen.config.ConfigsManager;
+import io.th0rgal.oraxen.utils.metrics.Metrics;
 import io.th0rgal.oraxen.utils.OS;
 import io.th0rgal.oraxen.utils.armorequipevent.ArmorListener;
 import io.th0rgal.oraxen.utils.fastinv.FastInvManager;
-import io.th0rgal.oraxen.utils.input.InputProvider;
-import io.th0rgal.oraxen.utils.input.chat.ChatInputProvider;
-import io.th0rgal.oraxen.utils.input.sign.SignMenuFactory;
 import io.th0rgal.oraxen.utils.logs.Logs;
-
-import java.util.function.Supplier;
-
-import org.bstats.bukkit.Metrics;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class OraxenPlugin extends JavaPlugin {
 
-    private Supplier<InputProvider> inputProvider;
-    private CommandProvider commandProvider;
-    private UploadManager uploadManager;
-
     private static OraxenPlugin oraxen;
+    private ConfigsManager configsManager;
+    private BukkitAudiences audience;
+    private UploadManager uploadManager;
+    private FontManager fontManager;
 
     public OraxenPlugin() throws Exception {
         oraxen = this;
@@ -45,59 +38,44 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     private void postLoading(ResourcePack resourcePack, ConfigsManager configsManager) {
-        commandProvider = new CommandProvider(this);
-        commandProvider.call(true);
-        Translations.MANAGER.reloadCatch();
-        (this.uploadManager = new UploadManager(this)).uploadAsyncAndSendToPlayers(resourcePack);
+        uploadManager = new UploadManager(this);
+        uploadManager.uploadAsyncAndSendToPlayers(resourcePack);
         new Metrics(this, 5371);
-        pluginDependent();
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> OraxenItems.loadItems(configsManager));
     }
 
-    private void pluginDependent() {
-        PluginManager manager = Bukkit.getPluginManager();
-        if (manager.getPlugin("ProtocolLib") != null) {
-            this.inputProvider = () -> new SignMenuFactory(this).newProvider();
-        } else {
-            ChatInputProvider.load(this);
-            this.inputProvider = ChatInputProvider::getFree;
-        }
+    public void onLoad() {
+        CommandAPI.onLoad(new CommandAPIConfig().silentLogs(true));
     }
 
     public void onEnable() {
-        ConfigsManager configsManager = new ConfigsManager(this);
-        if (!configsManager.validatesConfig()) {
-            MessageOld.CONFIGS_VALIDATION_FAILED.logError();
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
+        CommandAPI.onEnable(this);
+        audience = BukkitAudiences.create(this);
+        reloadConfigs();
+        new CommandsManager().loadCommands();
         PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new FallbackHandler(), this);
-        pluginManager.registerEvents(configsManager, this);
-        pluginManager.registerEvents(new LanguageListener(), this);
         MechanicsManager.registerNativeMechanics();
         CompatibilitiesManager.enableNativeCompatibilities();
-        pluginManager.callEvent(new OraxenConfigEvent());
+        fontManager = new FontManager(configsManager.getFont());
         OraxenItems.loadItems(configsManager);
-        ResourcePack resourcePack = new ResourcePack(this);
+        fontManager.registerEvents();
+        ResourcePack resourcePack = new ResourcePack(this, fontManager);
         RecipesManager.load(this);
         FastInvManager.register(this);
-        new ArmorListener(Plugin.ARMOR_EQUIP_EVENT_BYPASS.getAsStringList()).registerEvents(this);
+        new ArmorListener(Settings.ARMOR_EQUIP_EVENT_BYPASS.toStringList()).registerEvents(this);
         postLoading(resourcePack, configsManager);
-        Logs.log(ChatColor.GREEN + "Successfully loaded on " + OS.getOs().getPlatformName());
+        Message.PLUGIN_LOADED.log("os", OS.getOs().getPlatformName());
     }
 
     public void onDisable() {
         unregisterListeners();
         CompatibilitiesManager.disableCompatibilities();
-        Logs.log(ChatColor.GREEN + "Successfully unloaded");
+        Message.PLUGIN_UNLOADED.log();
     }
 
     private void unregisterListeners() {
+        fontManager.unregisterEvents();
         MechanicsManager.unloadListeners();
-        if (ChatInputProvider.LISTENER != null)
-            HandlerList.unregisterAll(ChatInputProvider.LISTENER);
-        commandProvider.call(false);
         HandlerList.unregisterAll(this);
     }
 
@@ -105,16 +83,38 @@ public class OraxenPlugin extends JavaPlugin {
         return oraxen;
     }
 
-    public InputProvider getInputProvider() {
-        return inputProvider.get();
+    public static boolean getProtocolLib() {
+        return Bukkit.getPluginManager().getPlugin("ProtocolLib") != null;
     }
 
-    public CommandProvider getCommandProvider() {
-        return commandProvider;
+    public BukkitAudiences getAudience() {
+        return audience;
+    }
+
+    public ConfigsManager reloadConfigs() {
+        configsManager = new ConfigsManager(this);
+        if (!configsManager.validatesConfig()) {
+            Logs.logError("unable to validate config");
+            getServer().getPluginManager().disablePlugin(this);
+        }
+        return configsManager;
+    }
+
+    public ConfigsManager getConfigsManager() {
+        return configsManager;
     }
 
     public UploadManager getUploadManager() {
         return uploadManager;
     }
 
+    public FontManager getFontManager() {
+        return fontManager;
+    }
+
+    public void setFontManager(FontManager fontManager) {
+        this.fontManager.unregisterEvents();
+        this.fontManager = fontManager;
+        fontManager.registerEvents();
+    }
 }

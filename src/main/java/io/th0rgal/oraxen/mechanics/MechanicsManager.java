@@ -1,26 +1,32 @@
 package io.th0rgal.oraxen.mechanics;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.command.condition.ICondition;
+import io.th0rgal.oraxen.mechanics.provided.armorpotioneffects.ArmorPotionEffectsMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.bedrockbreak.BedrockBreakMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.bigmining.BigMiningMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.block.BlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.bottledexp.BottledExpMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.commands.CommandsMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.consumable.ConsumableMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.consumablepotioneffects.ConsumablePotionEffectsMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.custom.CustomMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.durability.DurabilityMechanicFactory;
-import io.th0rgal.oraxen.mechanics.provided.energyblast.EnergyBlastMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.noteblock.NoteBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.spell.energyblast.EnergyBlastMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.harvesting.HarvestingMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.hat.HatMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.invisibleitemframe.InvisibleItemFrameFactory;
+import io.th0rgal.oraxen.mechanics.provided.itemtype.ItemTypeMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.lifeleech.LifeLeechMechanicFactory;
-import io.th0rgal.oraxen.mechanics.provided.potioneffects.PotionEffectsMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.repair.RepairMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.skin.SkinMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.skinnable.SkinnableMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.smelting.SmeltingMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.soulbound.SoulBoundMechanicFactory;
-import io.th0rgal.oraxen.mechanics.provided.thor.ThorMechanicFactory;
-import io.th0rgal.oraxen.settings.ConfigUpdater;
-import io.th0rgal.oraxen.settings.ResourcesManager;
+import io.th0rgal.oraxen.mechanics.provided.spell.fireball.FireballMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.spell.thor.ThorMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.spell.witherskull.WitherSkullMechanicFactory;
+import io.th0rgal.oraxen.config.ResourcesManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -47,12 +53,18 @@ public class MechanicsManager {
         registerMechanicFactory("durability", DurabilityMechanicFactory.class);
         registerMechanicFactory("repair", RepairMechanicFactory.class);
         registerMechanicFactory("commands", CommandsMechanicFactory.class);
-        registerMechanicFactory("potioneffects", PotionEffectsMechanicFactory.class);
+        registerMechanicFactory("armorpotioneffects", ArmorPotionEffectsMechanicFactory.class);
+        registerMechanicFactory("consumablepotioneffects", ConsumablePotionEffectsMechanicFactory.class);
         registerMechanicFactory("block", BlockMechanicFactory.class);
+        registerMechanicFactory("noteblock", NoteBlockMechanicFactory.class);
         registerMechanicFactory("hat", HatMechanicFactory.class);
         registerMechanicFactory("soulbound", SoulBoundMechanicFactory.class);
         registerMechanicFactory("skin", SkinMechanicFactory.class);
         registerMechanicFactory("skinnable", SkinnableMechanicFactory.class);
+        registerMechanicFactory("itemtype", ItemTypeMechanicFactory.class);
+        registerMechanicFactory("consumable", ConsumableMechanicFactory.class);
+        registerMechanicFactory("fireball", FireballMechanicFactory.class);
+        registerMechanicFactory("custom", CustomMechanicFactory.class);
 
         // combat
         //
@@ -60,6 +72,7 @@ public class MechanicsManager {
         registerMechanicFactory("thor", ThorMechanicFactory.class);
         registerMechanicFactory("lifeleech", LifeLeechMechanicFactory.class);
         registerMechanicFactory("energyblast", EnergyBlastMechanicFactory.class);
+        registerMechanicFactory("witherskull", WitherSkullMechanicFactory.class);
 
         // farming
         //
@@ -70,39 +83,29 @@ public class MechanicsManager {
         registerMechanicFactory("harvesting", HarvestingMechanicFactory.class);
         //
         // dependent
-        registerMechanicFactoryIfTrue(clazz -> Bukkit.getPluginManager().getPlugin("ProtocolLib") != null,
-            "bedrockbreak", BedrockBreakMechanicFactory.class);
-    }
+        if (OraxenPlugin.getProtocolLib())
+            registerMechanicFactory("bedrockbreak", BedrockBreakMechanicFactory.class);
 
-    public static void registerMechanicFactoryIfTrue(ICondition<Class<? extends MechanicFactory>> condition,
-        String mechanicId, Class<? extends MechanicFactory> mechanicFactoryClass) {
-        if (condition.isFalse(mechanicFactoryClass))
-            return;
-        registerMechanicFactory(mechanicId, mechanicFactoryClass);
-    }
+        // Dispo only +1.16 (20w10a)
+        if (Bukkit.getVersion().contains("1.16") || Bukkit.getVersion().contains("1.17")) registerMechanicFactory("invisible_frame", InvisibleItemFrameFactory.class);
 
-    public static void registerMechanicFactoryIfFalse(ICondition<Class<? extends MechanicFactory>> condition,
-        String mechanicId, Class<? extends MechanicFactory> mechanicFactoryClass) {
-        if (condition.isTrue(mechanicFactoryClass))
-            return;
-        registerMechanicFactory(mechanicId, mechanicFactoryClass);
     }
 
     public static void registerMechanicFactory(String mechanicId,
-        Class<? extends MechanicFactory> mechanicFactoryClass) {
+                                               Class<? extends MechanicFactory> mechanicFactoryClass) {
         Entry<File, YamlConfiguration> mechanicsEntry = new ResourcesManager(OraxenPlugin.get()).getMechanicsEntry();
         YamlConfiguration mechanicsConfig = mechanicsEntry.getValue();
-        boolean updated = ConfigUpdater.update(mechanicsEntry.getKey(), mechanicsConfig);
+        boolean updated = false;
         if (mechanicsConfig.getKeys(false).contains(mechanicId)) {
             ConfigurationSection factorySection = mechanicsConfig.getConfigurationSection(mechanicId);
             if (factorySection.getBoolean("enabled"))
                 try {
                     MechanicFactory factory = mechanicFactoryClass
-                        .getConstructor(ConfigurationSection.class)
-                        .newInstance(factorySection);
+                            .getConstructor(ConfigurationSection.class)
+                            .newInstance(factorySection);
                     FACTORIES_BY_MECHANIC_ID.put(mechanicId, factory);
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException
-                    | NoSuchMethodException e) {
+                        | NoSuchMethodException e) {
                     e.printStackTrace();
                 }
         }

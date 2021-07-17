@@ -23,12 +23,12 @@
 # r reset (reset format and color)
 
 emerald_helmet:
-  displayname: "&aEmerald Helmet"
+  displayname: "<gradient:#89E59D:#37C6BA>Emerald Helmet"
   material: LEATHER_HELMET
   color: 3, 252, 136 #rgb
   lore:
     - ""
-    - "&8» &7Gives 1 extra &c\u2764"
+    - "<#6f737d>» <#D5D6D8>Gives 1 extra <glyph:heart>"
   Mechanics:
     durability:
       value: 437 # 20% more than diamond helmet
@@ -43,15 +43,15 @@ emerald_helmet:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: 3a25f0b5-dbda-4e38-b097-9e75e37ae464, slot: HEAD }
   Pack:
     generate_model: false
-    model: custom_helmet
+    model: default/custom_helmet
 
 emerald_chestplate:
-  displayname: "&aEmerald Chestplate"
+  displayname: "<gradient:#89E59D:#37C6BA>Emerald Chestplate"
   material: LEATHER_CHESTPLATE
   color: 3, 252, 136
   lore:
     - ""
-    - "&8» &7Gives 1.5 extra &c\u2764"
+    - "<#6f737d>» <#D5D6D8>Gives 1.5 extra <glyph:heart>"
   Mechanics:
     durability:
       value: 635
@@ -61,15 +61,15 @@ emerald_chestplate:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: e06fc6c9-f06a-4b58-b1e2-10d6b282ac04, slot: CHEST }
   Pack:
     generate_model: false
-    model: custom_chestplate
+    model: default/custom_chestplate
 
 emerald_leggings:
-  displayname: "&aEmerald Leggings"
+  displayname: "<gradient:#89E59D:#37C6BA>Emerald Leggings"
   material: LEATHER_LEGGINGS
   color: 3, 252, 136
   lore:
     - ""
-    - "&8» &7Gives 1.5 extra &c\u2764"
+    - "<#6f737d>» <#D5D6D8>Gives 1.5 extra <glyph:heart>"
   Mechanics:
     durability:
       value: 595
@@ -79,15 +79,15 @@ emerald_leggings:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: 389ad53a-76be-4101-9ed1-e8da4845d5d2, slot: LEGS }
   Pack:
     generate_model: false
-    model: custom_leggings
+    model: default/custom_leggings
 
 emerald_boots:
-  displayname: "&aEmerald Boots"
+  displayname: "<gradient:#89E59D:#37C6BA>Emerald Boots"
   material: LEATHER_BOOTS
   color: 3, 252, 136
   lore:
     - ""
-    - "&8» &7Gives 1 extra &c\u2764"
+    - "<#6f737d>» <#D5D6D8>Gives 1 extra <glyph:heart>"
   Mechanics:
     durability:
       value: 516
@@ -97,14 +97,14 @@ emerald_boots:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: 7bfcf804-b75a-40a5-97f5-f23282703d0e, slot: FEET }
   Pack:
     generate_model: false
-    model: custom_boots
+    model: default/custom_boots
 
 obsidian_helmet:
-  displayname: "&dObsidian Helmet"
+  displayname: "<gradient:#4B36B1:#6699FF>Obsidian Helmet"
   material: LEATHER_HELMET
   color: 28, 22, 46
   lore:
-    - "&8» &7Ludicrous durability"
+    - "<#6f737d>» <#D5D6D8>Ludicrous durability"
   Mechanics:
     durability:
       value: 4370
@@ -112,14 +112,14 @@ obsidian_helmet:
     - { name: "oraxen", attribute: GENERIC_ARMOR, amount: 2, operation: 0, uuid: 3a25f0b5-dbda-4e38-b097-9e75e37ae464, slot: HEAD }
   Pack:
     generate_model: false
-    model: custom_helmet
+    model: default/custom_helmet
 
 obsidian_chestplate:
-  displayname: "&dObsidian Chestplate"
+  displayname: "<gradient:#4B36B1:#6699FF>Obsidian Chestplate"
   material: LEATHER_CHESTPLATE
   color: 28, 22, 46
   lore:
-    - "&8» &7Ludicrous durability"
+    - "<#6f737d>» <#D5D6D8>Ludicrous durability"
   Mechanics:
     durability:
       value: 6350
@@ -127,14 +127,14 @@ obsidian_chestplate:
     - { name: "oraxen", attribute: GENERIC_ARMOR, amount: 6, operation: 0, uuid: e06fc6c9-f06a-4b58-b1e2-10d6b282ac04, slot: CHEST }
   Pack:
     generate_model: false
-    model: custom_chestplate
+    model: default/custom_chestplate
 
 obsidian_leggings:
-  displayname: "&dObsidian Leggings"
+  displayname: "<gradient:#4B36B1:#6699FF>Obsidian Leggings"
   material: LEATHER_LEGGINGS
   color: 28, 22, 46
   lore:
-    - "&8» &7Ludicrous durability"
+    - "<#6f737d>» <#D5D6D8>Ludicrous durability"
   Mechanics:
     durability:
       value: 5950
@@ -142,14 +142,14 @@ obsidian_leggings:
     - { name: "oraxen", attribute: GENERIC_ARMOR, amount: 5, operation: 0, uuid: 389ad53a-76be-4101-9ed1-e8da4845d5d2, slot: LEGS }
   Pack:
     generate_model: false
-    model: custom_leggings
+    model: default/custom_leggings
 
 obsidian_boots:
-  displayname: "&dBoots Boots"
+  displayname: "<gradient:#4B36B1:#6699FF>Boots Boots"
   material: LEATHER_BOOTS
   color: 28, 22, 46
   lore:
-    - "&8» &7Ludicrous durability"
+    - "<#6f737d>» <#D5D6D8>Ludicrous durability"
   Mechanics:
     durability:
       value: 5160
@@ -157,10 +157,10 @@ obsidian_boots:
     - { name: "oraxen", attribute: GENERIC_ARMOR, amount: 2, operation: 0, uuid: 7bfcf804-b75a-40a5-97f5-f23282703d0e, slot: FEET }
   Pack:
     generate_model: false
-    model: custom_boots
+    model: default/custom_boots
 
 ruby_helmet:
-  displayname: "&cRuby Helmet"
+  displayname: "<gradient:#FA7CBB:#F14658>Ruby Helmet"
   material: LEATHER_HELMET
   color: 252, 3, 28
   Mechanics:
@@ -171,10 +171,10 @@ ruby_helmet:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: 3a25f0b5-dbda-4e38-b097-9e75e37ae464, slot: HEAD }
   Pack:
     generate_model: false
-    model: custom_helmet
+    model: default/custom_helmet
 
 ruby_chestplate:
-  displayname: "&cRuby Chestplate"
+  displayname: "<gradient:#FA7CBB:#F14658>Ruby Chestplate"
   material: LEATHER_CHESTPLATE
   color: 252, 3, 28
   Mechanics:
@@ -185,10 +185,10 @@ ruby_chestplate:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: e06fc6c9-f06a-4b58-b1e2-10d6b282ac04, slot: CHEST }
   Pack:
     generate_model: false
-    model: custom_chestplate
+    model: default/custom_chestplate
 
 ruby_leggings:
-  displayname: "&cRuby Leggings"
+  displayname: "<gradient:#FA7CBB:#F14658>Ruby Leggings"
   material: LEATHER_LEGGINGS
   color: 252, 3, 28
   Mechanics:
@@ -199,10 +199,10 @@ ruby_leggings:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: 389ad53a-76be-4101-9ed1-e8da4845d5d2, slot: LEGS }
   Pack:
     generate_model: false
-    model: custom_leggings
+    model: default/custom_leggings
 
 ruby_boots:
-  displayname: "&cRuby Boots"
+  displayname: "<gradient:#FA7CBB:#F14658>Ruby Boots"
   material: LEATHER_BOOTS
   color: 252, 3, 28
   Mechanics:
@@ -213,4 +213,4 @@ ruby_boots:
     - { name: "oraxen", attribute: GENERIC_ARMOR_TOUGHNESS, amount: 2, operation: 0, uuid: 7bfcf804-b75a-40a5-97f5-f23282703d0e, slot: FEET }
   Pack:
     generate_model: false
-    model: custom_boots
+    model: default/custom_boots

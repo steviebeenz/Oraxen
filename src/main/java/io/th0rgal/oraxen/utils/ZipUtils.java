@@ -1,8 +1,10 @@
 package io.th0rgal.oraxen.utils;
 
-import io.th0rgal.oraxen.settings.Pack;
+import io.th0rgal.oraxen.config.Settings;
+import org.bukkit.plugin.Plugin;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.List;
@@ -32,15 +34,15 @@ public class ZipUtils {
     }
 
     public static void writeZipFile(File outputFile, File directoryToZip,
-        Map<String, List<File>> fileListByZipDirectory) {
+                                    Map<String, List<File>> fileListByZipDirectory) {
 
         try {
             FileOutputStream fos = new FileOutputStream(outputFile);
             ZipOutputStream zos = new ZipOutputStream(fos);
 
-            int compressionLevel = Deflater.class.getDeclaredField(Pack.COMPRESSION.toString()).getInt(null);
+            int compressionLevel = Deflater.class.getDeclaredField(Settings.COMPRESSION.toString()).getInt(null);
             zos.setLevel(compressionLevel);
-            zos.setComment(Pack.COMMENT.toString());
+            zos.setComment(Settings.COMMENT.toString());
 
             for (Map.Entry<String, List<File>> inZipDirectoryFiles : fileListByZipDirectory.entrySet())
                 for (File file : inZipDirectoryFiles.getValue())
@@ -54,7 +56,7 @@ public class ZipUtils {
     }
 
     public static void addToZip(File directoryToZip, File file, String inZipDirectory, ZipOutputStream zos)
-        throws IOException {
+            throws IOException {
 
         FileInputStream fis = new FileInputStream(file);
 
@@ -77,6 +79,10 @@ public class ZipUtils {
 
         zos.closeEntry();
         fis.close();
+        if (!(Settings.PROTECTION.toBool()))
+            return;
+        zipEntry.setCrc(bytes.length);
+        zipEntry.setSize(new BigInteger(bytes).mod(BigInteger.valueOf(Long.MAX_VALUE)).longValue());
     }
 
 }

@@ -1,8 +1,8 @@
 package io.th0rgal.oraxen.mechanics.provided.smelting;
 
-import com.syntaxphoenix.syntaxapi.reflection.Reflect;
 import io.th0rgal.oraxen.items.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -16,12 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-
-import static io.th0rgal.oraxen.utils.reflection.ReflectionProvider.ORAXEN;
+import java.util.*;
 
 public class SmeltingMechanicListener implements Listener {
 
@@ -48,34 +43,29 @@ public class SmeltingMechanicListener implements Listener {
         if (loot == null)
             return; // not recipe
         ItemMeta itemMeta = item.getItemMeta();
+        if (itemMeta == null) return;
 
-        if (Objects.requireNonNull(itemMeta).hasEnchant(Enchantment.LOOT_BONUS_BLOCKS)) {
+        if (event.getBlock().getType().toString().contains("ORE")
+                && itemMeta.hasEnchant(Enchantment.LOOT_BONUS_BLOCKS)) {
             loot.setAmount(1 + new Random().nextInt(itemMeta.getEnchantLevel(Enchantment.LOOT_BONUS_BLOCKS)));
         }
         event.setDropItems(false);
-        Location location = event.getBlock().getLocation();
-        Objects.requireNonNull(location.getWorld()).dropItemNaturally(location, loot);
+        Location location = event.getBlock().getLocation().add(0, 0.5, 0);
+        if (location.getWorld() == null) return;
+        location.getWorld().dropItemNaturally(location, loot);
         SmeltingMechanic mechanic = (SmeltingMechanic) factory.getMechanic(itemID);
         if (mechanic.playSound()) {
             location.getWorld().playSound(location, Sound.ENTITY_GUARDIAN_ATTACK, 0.10f, 0.8f);
         }
     }
 
-    @SuppressWarnings("unchecked")
     private ItemStack furnace(ItemStack item) {
         if (item == null)
             return null; // Because item can be null
-        Optional<Reflect> recipeIteratorReflect = ORAXEN.getOptionalReflect("cb_recipeiterator");
-        if (!recipeIteratorReflect.isPresent())
-            throw new IllegalStateException("Oraxen Reflections aren't setup properly?");
-        Iterator<Recipe> recipeIterator = (Iterator<Recipe>) recipeIteratorReflect.get().init();
-
-        while (recipeIterator.hasNext()) {
-            Recipe recipe = recipeIterator.next();
-            if (!(recipe instanceof CookingRecipe))
+        for (Recipe recipe : Bukkit.getRecipesFor(item)) {
+            if (!(recipe instanceof CookingRecipe<?> cookingRecipe))
                 continue;
-            CookingRecipe<?> recipe1 = (CookingRecipe<?>) recipe;
-            if (recipe1.getInputChoice().test(item))
+            if (cookingRecipe.getInputChoice().test(item))
                 return new ItemStack(recipe.getResult().getType(), item.getAmount());
         }
         return null; // return result furnace :)

@@ -5,11 +5,16 @@ plugins {
     id "idea"
     id "eclipse"
     id "maven-publish"
-    id "com.github.johnrengelman.shadow" version "5.2.0"
+    id "com.github.johnrengelman.shadow" version '7.0.0'
 }
 
+apply plugin: 'maven-publish'
+
 group "io.th0rgal"
-def pluginVersion = "1.60.2"
+def pluginVersion = "1.83.1"
+ext.jitpackGroup = group + ".oraxen"
+ext.jitpackVersion = 'main-' + pluginVersion
+version = pluginVersion
 
 repositories {
     mavenCentral()
@@ -18,58 +23,41 @@ repositories {
     maven { url "https://hub.spigotmc.org/nexus/content/repositories/snapshots/" }
     //Because Spigot depends on Bungeecord ChatComponent-API
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    //CodeMc (bstats)
-    maven { url "https://repo.codemc.org/repository/maven-public" }
+    //JitPack
+    maven { url 'https://jitpack.io' }
     //ProtocolLib
     maven { url "https://repo.dmulloy2.net/nexus/repository/public/" }
     //Minecraft repo (commodore)
     maven { url "https://libraries.minecraft.net/" }
-    //MythicMobs
-    maven { url "https://mvn.lumine.io/repository/maven-public/" }
-    //JitPack
-    maven { url 'https://jitpack.io' }
     //PlaceHolderAPI
     maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
     //EffectLib
-    maven { url 'http://maven.elmakers.com/repository/' }
+    maven { url 'https://maven.elmakers.com/repository/' }
     //sk89q-repo
     maven { url 'https://maven.enginehub.org/repo/' }
-    jcenter() // needed for building shadow from protocolLib 4.5.0
+    //CodeMc (bstats)
+    maven { url "https://repo.codemc.org/repository/maven-public" }
 }
 
 compileJava {
-    options.compilerArgs += ["-parameters"]
-    options.fork = true
-    options.forkOptions.executable = 'javac'
     options.encoding = "UTF-8"
-}
-
-tasks.withType(JavaCompile) {
-    options.compilerArgs << '-Xlint:unchecked'
-    options.deprecation = true
 }
 
 dependencies {
     // The Spigot API with no shadowing. Requires the OSS repo.
-    compileOnly group: "org.spigotmc", name: "spigot", version: "1.14.4-R0.1-SNAPSHOT"
-    compileOnly group: "org.spigotmc", name: "spigot-api", version: "1.14.4-R0.1-SNAPSHOT"
-    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "+"
-    compileOnly group: "io.lumine.xikage", name: "MythicMobs", version: "4.9.2"
+    compileOnly group: "org.spigotmc", name: "spigot", version: "1.16.5-R0.1-SNAPSHOT"
+    compileOnly group: "org.spigotmc", name: "spigot-api", version: "1.16.5-R0.1-SNAPSHOT"
+    compileOnly group: "com.github.dmulloy2", name: "ProtocolLib", version: "4.6.0"
     compileOnly group: "com.github.Hazebyte", name: "CrateReloadedAPI", version: "5318abfccc"
-    compileOnly group: "com.sk89q.worldguard", name: "worldguard-bukkit", version: "LATEST"
-    compileOnly group: "com.sk89q.worldguard", name: "worldguard-bukkit", version: "+"
+    compileOnly group: "com.sk89q.worldguard", name: "worldguard-bukkit", version: "7.0.5"
+    compileOnly group: "com.github.jojodmo", name: "ItemBridge", version: "-SNAPSHOT"
     compileOnly fileTree(dir: "libs/compile", include: ["*.jar"])
     implementation fileTree(dir: "libs/implement", include: ["*.jar"])
-    implementation group: 'com.github.rockswang', name: 'java-curl', version: '1.2.2.2'
-    implementation group: 'org.bstats', name: 'bstats-bukkit', version: '1.7'
-    implementation group: 'org.yaml', name: 'snakeyaml', version: '1.25'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'reflection', version: '2.0.2'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'version', version: '2.0.2'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'nbt', version: '2.0.2'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'config-base', version: '2.0.2'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'alias', version: '2.0.2'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'logging', version: '2.0.2'
-    implementation group: 'com.syntaxphoenix.syntaxapi', name: 'exception', version: '2.0.2'
+    implementation group: 'com.github.rockswang', name: 'java-curl', version: '1.2.2.190107'
+    implementation group: 'org.yaml', name: 'snakeyaml', version: '1.28'
+    implementation "net.kyori:adventure-text-minimessage:4.1.0-SNAPSHOT"
+    implementation "net.kyori:adventure-platform-bukkit:4.0.0-SNAPSHOT"
+    implementation 'dev.jorel.CommandAPI:commandapi-shade:6.1.0'
 }
 
 processResources {
@@ -84,16 +72,15 @@ java {
 }
 
 shadowJar {
-    relocate "org.bstats.bukkit", "io.th0rgal.oraxen.shaded.bstats"
     relocate "com.syntaxphoenix.syntaxapi", "io.th0rgal.oraxen.shaded.syntaxapi"
     relocate "org.yaml.snakeyaml", "io.th0rgal.oraxen.shaded.snakeyaml"
+    relocate "net.kyori", "io.th0rgal.oraxen.shaded.kyori"
+    /*
     minimize {
         exclude("io.th0rgal.oraxen.api.*")
         exclude("com.syntaxphoenix.syntaxapi.*")
     }
-    archiveClassifier.set(pluginVersion)
-    archiveClassifier.set(pluginVersion)
-
+    */
     manifest {
         attributes(
                 'Built-By': System.properties['user.name'],
@@ -108,3 +95,20 @@ shadowJar {
 
 compileJava.dependsOn clean
 build.dependsOn shadowJar
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/oraxen/Oraxen"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    publications {
+        grp(MavenPublication) {
+            from(components.java)
+        }
+    }
+}

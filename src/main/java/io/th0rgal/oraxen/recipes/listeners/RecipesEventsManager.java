@@ -3,9 +3,6 @@ package io.th0rgal.oraxen.recipes.listeners;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.items.OraxenItems;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
-
-import java.util.stream.Collectors;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -18,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RecipesEventsManager implements Listener {
 
@@ -46,23 +44,19 @@ public class RecipesEventsManager implements Listener {
         ItemStack result = event.getInventory().getResult();
         if (result == null)
             return;
-        boolean containsOraxenItem = OraxenItems.exists(OraxenItems.getIdByItem(result));
+        boolean containsOraxenItem = false;
         if (!containsOraxenItem)
-            for (ItemStack ingredient : event.getInventory().getMatrix())
-                if (OraxenItems.exists(OraxenItems.getIdByItem(ingredient))) {
-                    containsOraxenItem = true;
-                    break;
-                }
-        if (!containsOraxenItem)
-            return;
-
-        CustomRecipe current = new CustomRecipe(null, Objects.requireNonNull(recipe).getResult(),
+            if (Arrays.stream(event.getInventory().getMatrix()).anyMatch(ingredient ->
+                    OraxenItems.exists(OraxenItems.getIdByItem(ingredient)))) {
+                containsOraxenItem = true;
+            }
+        if (!containsOraxenItem || recipe == null) return;
+        CustomRecipe current = new CustomRecipe(null, recipe.getResult(),
                 Arrays.asList(event.getInventory().getMatrix()));
         for (CustomRecipe whitelistedRecipe : whitelistedCraftRecipes) {
             if (whitelistedRecipe.equals(current))
                 return;
         }
-
         event.getInventory().setResult(new ItemStack(Material.AIR));
     }
 
@@ -84,12 +78,20 @@ public class RecipesEventsManager implements Listener {
     public List<CustomRecipe> getPermittedRecipes(CommandSender sender) {
         return whitelistedCraftRecipesOrdered
                 .stream()
-                .filter(customRecipe -> hasPermission(sender, customRecipe))
+                .filter(customRecipe -> !permissionsPerRecipe.containsKey(customRecipe) || hasPermission(sender, customRecipe))
                 .collect(Collectors.toList());
     }
 
+    public String[] getPermittedRecipesName(CommandSender sender) {
+        return getPermittedRecipes(sender)
+                .stream()
+                .map(CustomRecipe::getName)
+                .toArray(String[]::new);
+    }
+
+
     public boolean hasPermission(CommandSender sender, CustomRecipe recipe) {
-        return !permissionsPerRecipe.containsKey(recipe) || sender.hasPermission(permissionsPerRecipe.get(recipe));
+        return permissionsPerRecipe.containsKey(recipe) && sender.hasPermission(permissionsPerRecipe.get(recipe));
     }
 
 }
